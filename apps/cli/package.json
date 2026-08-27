@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh",
-  "description": "dsh CLI: profile boot, plugin management, and the browser UI alias",
+  "description": "ayana CLI: profile boot, plugin management, and the browser UI alias",
   "version": "0.1.0-rc.8",
   "publishConfig": {
     "access": "public"
@@ -12,7 +12,7 @@
   },
   "type": "module",
   "bin": {
-    "dsh": "lib/bin.js"
+    "ayana": "lib/bin.js"
   },
   "files": [
     "lib/*.js",
