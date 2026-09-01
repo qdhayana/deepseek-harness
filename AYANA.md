@@ -40,6 +40,17 @@ Phase 2 hardens the gate server-side together with the BFF-backed provider (back
 
 Add remote `upstream` → `deepseek-ai/deepseek-harness` and merge at `dsh-v*` release tags on a fortnightly cadence, never mid-PR-stream. Keep the fork CI = upstream gates (`.github/workflows/ci.yml`) with only the release workflow replaced. Expect upstream format breaks (`SESSION_FORMAT_VERSION`, repo's pre-release stance); call them out in AYANA release notes. Conflicts should concentrate in the edit registry below — investigate anything else.
 
+### 9. macOS desktop `.app` for team installs
+
+Ship a macOS `.app` as the primary desktop distribution for teams. The app tells teams "double-click and it opens in your browser" instead of teaching a CLI workflow: `Contents/MacOS/ayana` is a minimal native launcher that spawns the packaged `ayana-macos-arm64` exe from `Contents/Resources/` with the web profile, waits for the local port, opens the default browser, and owns lifecycle (Dock icon, Quit kills the child). No embedded web engine — the UI stays in the browser, so the wrapper adds megabytes, not hundreds of megabytes.
+
+Two scoped risks this decision accepts up front:
+
+- **Update path for `.app` installs is the installer, not self-update.** Swapping the exe inside an already-notarized bundle breaks notarization, so `.app` users take updates from the `.pkg` installer channel (decision 3) until a re-notarize-on-update path exists. Self-update as designed applies to headless and non-`.app` installs only.
+- **The launcher is a fork-owned new package** (backlog: `apps/desktop-app`), so this decision adds an in-repo macOS build surface with its own host constraint (build on a darwin machine; same one that already owns node-pty staging there).
+
+Alternatives recorded, not taken: **Tauri 2** (OS WebKit embedded window in a Rust shell; native-feeling dock/tray, ~15 MB shell) — defer until teams actually want an app window instead of a browser tab; **Electron** is rejected on size grounds alone. Standard distribution format for unsigned Apple Silicon builds is a signed disk image or zipped `.app`; unsigned-for-testing is fine, but employees never install an unnotarized build.
+
 ## In-place edit registry
 
 The complete list of upstream files the fork modifies. Keep each edit small and grep-able.
@@ -63,6 +74,7 @@ Ordered, unstarted. Each item links its seam when picked up.
 
 - **Provider/model allowlist** (decision 6). Tier 1: bundle config pins `agent-default-model` and disables `llm-pi-ai` — offer-lock only. Tier 2: fork-owned guard plugin on the `llm/stream` waterfall rejecting non-allowlisted provider/model — hard, still additive. Tier 3: BFF-backed provider — no direct provider adapter ships; the AYANA BFF holds provider keys, validates Auth0 JWT, enforces model policy server-side (`packages/api/gateway`, `packages/client/connection` are the shipped remote seam). Tier 3 also removes API keys from laptops; pair with Auth0 phase 2.
 - **Windows executable target** for the SEA pipeline: extend the platform list beyond `node24-linux-*/macos-arm64`, validate the node-pty winpty path (unexercised by the current exe build), spawn-helper equivalent, and the launcher-shim swap on Windows.
+- **macOS `.app` launcher** (decision 9): fork-owned `apps/desktop-app` package — thin native launcher wrapping `ayana-macos-arm64` + `-rg`/`-spawn-helper` sidecars in `Contents/Resources/`, Info.plist with the AYANA icon, and a `.app` assembly step in the darwin build leg after the signing infra item lands.
 - **Signing infrastructure**: Apple Developer ID + notarization flow, Windows code-signing certificate.
 - **Update endpoint hosting** decision (S3+CDN vs GitHub Releases vs AYANA BFF) and channel manifest schema (`<product>-<platform>-<arch>` naming follows the existing exe pipeline).
 - **Home-dir migration**: decide whether AYANA reads legacy `$DSH_HOME`/`~/.dsh` during employee rollout.

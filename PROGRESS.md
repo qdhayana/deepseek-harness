@@ -9,6 +9,7 @@ Working log for the AYANA productization effort. Decisions live in [AYANA.md](AY
 - **Dev environment working** — `corepack pnpm install && corepack pnpm run build` verified from clean checkout; `pnpm dsh web` serves on 127.0.0.1:3080. Dev loop: `pnpm run dev:web` for hot browser reload (never concurrently with `pnpm run build`).
 - **Remote access settled** — SSH tunnel (`ssh -L 3080:localhost:3080`), confirmed working from MacBook. tailscale serve + `--trusted-host <machine>.<tailnet>.ts.net` documented as the persistent-share alternative. Direct `0.0.0.0` bind is a hard refusal in code (`packages/bundle/web-app/src/startup.ts:75`) by design; fence is reachability-only, no auth — no tailnet sharing before the Auth0 gate.
 - **SEA CLI exe spike complete** — `apps/cli-pkg` deploy root + `scripts/build-exe-cli.ts` produce `dist-exe/ayana-linux-x64` (208 MB) + `-rg` sidecar via pnpm deploy → `@yao-pkg/pkg --sea` (node24); smoke: `--version`=0.1.0-rc.8, `--help` exit 0, `--profile web` from a fresh `DSH_HOME` serves index (200) + a hashed css asset (200) over curl. Found and fixed a native-asset gap: `node_modules/**/*.so` never matches versioned sonames, leaving sharp's 18 MB `libvips-cpp.so.8.18.3` out of the frozen blob and failing web-profile boot with `ERR_DLOPEN_FAILED`; added `*.so.*`/`*.dylib` globs (191→208 MB, zero dlopen errors, boot reaches credential resolution). LLM-path retest pending a `DEEPSEEK_API_KEY` in this environment.
+- **macOS `.app` decided (per user, 2026-08-26)** — thin native launcher wrapping the `ayana-macos-arm64` exe (no embedded web engine; Dock icon + browser handoff); recorded as AYANA.md decision 9, new backlog item `apps/desktop-app`, gated on the signing-infra item. Update interplay recorded there too: `.app` updates come from the installer channel until a re-notarize-on-update path exists.
 
 ## In progress
 
@@ -28,8 +29,9 @@ Working log for the AYANA productization effort. Decisions live in [AYANA.md](AY
 1. Commit this update (git mutations approved by user).
 2. Update check + self-update (needs hosting decision: GitHub Releases vs S3+CDN vs BFF).
 3. Windows build via GitHub Actions `windows-2025` runner (can't cross-compile node-pty from Linux).
-4. Auth0 gate plugin (needs tenant domain + client ID + flow choice from user).
-5. AYANA bundle package, then registry lines 6/7/5/3 behind their decisions.
+4. macOS `.app` launcher — after the signing-infra item; mech verified end-to-end on a darwin host.
+5. Auth0 gate plugin (needs tenant domain + client ID + flow choice from user).
+6. AYANA bundle package, then registry lines 6/7/5/3 behind their decisions.
 
 ## Open questions for the user
 
